@@ -81,17 +81,47 @@ async function checkProductPrice(productId) {
             const totalPercentDrop = ((totalDrop / originalPrice) * 100).toFixed(1);
             
             shouldNotify = true;
-            notificationMessage = `${product.name}\nБыло: ${previousPrice.toFixed(2)} ₽\nСтало: ${currentPrice.toFixed(2)} ₽\nЭкономия: ${priceDrop.toFixed(2)} ₽ (${percentDrop}%)\nОт изначальной: -${totalDrop.toFixed(2)} ₽ (${totalPercentDrop}%)`;
+            // Get user's language preference
+            const langResult = await browser.storage.local.get(['language']);
+            const lang = langResult.language || 'en';
+            
+            const translations = {
+              en: {
+                was: 'Was:',
+                became: 'Became:',
+                savings: 'Savings:',
+                fromOriginal: 'From original:',
+                priceDropped: 'Price Dropped! 🎉'
+              },
+              ru: {
+                was: 'Было:',
+                became: 'Стало:',
+                savings: 'Экономия:',
+                fromOriginal: 'От изначальной:',
+                priceDropped: 'Цена снизилась! 🎉'
+              }
+            };
+            
+            const t = translations[lang] || translations.en;
+            notificationMessage = `${product.name}\n${t.was} ${previousPrice.toFixed(2)} ₽\n${t.became} ${currentPrice.toFixed(2)} ₽\n${t.savings} ${priceDrop.toFixed(2)} ₽ (${percentDrop}%)\n${t.fromOriginal} -${totalDrop.toFixed(2)} ₽ (${totalPercentDrop}%)`;
           }
         } else {
           product.priceDropped = false;
         }
         
         if (shouldNotify) {
+          const langResult = await browser.storage.local.get(['language']);
+          const lang = langResult.language || 'en';
+          const translations = {
+            en: { priceDropped: 'Price Dropped! 🎉' },
+            ru: { priceDropped: 'Цена снизилась! 🎉' }
+          };
+          const t = translations[lang] || translations.en;
+          
           browser.notifications.create({
             type: 'basic',
             iconUrl: 'icons/icon48.png',
-            title: 'Цена снизилась! 🎉',
+            title: t.priceDropped,
             message: notificationMessage
           });
         }
@@ -101,7 +131,7 @@ async function checkProductPrice(productId) {
       }
     }
   } catch (error) {
-    console.error('Ошибка при проверке цены:', error);
+    console.error('Error checking price:', error);
   }
 }
 

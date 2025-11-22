@@ -1,4 +1,42 @@
 let products = {};
+let currentLang = 'en';
+
+// Load language preference
+async function loadLanguage() {
+  const result = await browser.storage.local.get(['language']);
+  currentLang = result.language || 'en';
+  applyLanguage();
+}
+
+// Apply language to UI
+function applyLanguage() {
+  document.getElementById('headerTitle').textContent = `💰 ${t('title', currentLang)}`;
+  document.getElementById('addProductTitle').textContent = t('addProduct', currentLang);
+  document.getElementById('addCurrentPage').textContent = t('addCurrentPage', currentLang);
+  document.getElementById('productName').placeholder = t('productName', currentLang);
+  document.getElementById('productUrl').placeholder = t('productUrl', currentLang);
+  document.getElementById('productPrice').placeholder = t('productPrice', currentLang);
+  document.getElementById('saveProduct').textContent = t('save', currentLang);
+  document.getElementById('cancelAdd').textContent = t('cancel', currentLang);
+  document.getElementById('trackedProductsTitle').textContent = t('trackedProducts', currentLang);
+  
+  // Update language buttons
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.classList.remove('active');
+    if (btn.getAttribute('data-lang') === currentLang) {
+      btn.classList.add('active');
+    }
+  });
+  
+  renderProducts();
+}
+
+// Change language
+async function changeLanguage(lang) {
+  currentLang = lang;
+  await browser.storage.local.set({ language: lang });
+  applyLanguage();
+}
 
 async function loadProducts() {
   const result = await browser.storage.local.get(['products']);
@@ -10,11 +48,15 @@ function renderProducts() {
   const productsList = document.getElementById('productsList');
   
   if (Object.keys(products).length === 0) {
-    productsList.innerHTML = '<p class="empty-state">Нет отслеживаемых товаров</p>';
+    productsList.textContent = '';
+    const emptyState = document.createElement('p');
+    emptyState.className = 'empty-state';
+    emptyState.textContent = t('noProducts', currentLang);
+    productsList.appendChild(emptyState);
     return;
   }
   
-  productsList.innerHTML = '';
+  productsList.textContent = '';
   
   for (const productId in products) {
     const product = products[productId];
@@ -37,76 +79,143 @@ function createProductItem(product) {
   const percentDrop = ((priceDrop / originalPrice) * 100).toFixed(1);
   const minPrice = product.minPrice ? parseFloat(product.minPrice) : originalPrice;
   
+  const locale = currentLang === 'ru' ? 'ru-RU' : 'en-US';
   const lastChecked = product.lastChecked 
-    ? new Date(product.lastChecked).toLocaleString('ru-RU')
-    : 'Никогда';
+    ? new Date(product.lastChecked).toLocaleString(locale)
+    : t('never', currentLang);
   
-  const imageHtml = product.image 
-    ? `<img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}" class="product-image" onerror="this.style.display='none'">`
-    : '';
+  // Create header
+  const header = document.createElement('div');
+  header.className = 'product-header';
   
-  item.innerHTML = `
-    <div class="product-header">
-      <div class="product-name">${escapeHtml(product.name)}</div>
-      <div class="product-actions">
-        <button class="btn btn-small check-price-btn" data-id="${product.id}">
-          Проверить
-        </button>
-        <button class="btn btn-danger remove-btn" data-id="${product.id}">
-          Удалить
-        </button>
-      </div>
-    </div>
-    <div class="product-content">
-      ${imageHtml}
-      <div class="product-details">
-        <a href="${product.url}" target="_blank" class="product-url">
-          ${product.url}
-        </a>
-        <div class="price-info">
-          <div>
-            <span class="price-label">Изначальная цена:</span>
-            <span class="price-value price-original">${originalPrice.toFixed(2)} ₽</span>
-          </div>
-        </div>
-        <div class="price-info">
-          <div>
-            <span class="price-label">Текущая цена:</span>
-            <span class="price-value price-current">${currentPrice.toFixed(2)} ₽</span>
-            ${priceDrop > 0 ? `<span class="price-drop-badge">-${percentDrop}%</span>` : ''}
-          </div>
-        </div>
-        ${minPrice < originalPrice ? `
-          <div class="price-info">
-            <span class="price-label">Минимальная цена:</span>
-            <span class="price-value price-min">${minPrice.toFixed(2)} ₽</span>
-          </div>
-        ` : ''}
-        ${priceDrop > 0 ? `
-          <div class="price-info">
-            <span class="price-drop">Экономия: ${priceDrop.toFixed(2)} ₽</span>
-          </div>
-        ` : ''}
-        <div class="last-checked">Последняя проверка: ${lastChecked}</div>
-        ${product.priceHistory && product.priceHistory.length > 1 ? `
-          <button class="btn btn-chart show-chart-btn" data-id="${product.id}">
-            📊 График цены
-          </button>
-        ` : ''}
-      </div>
-    </div>
-  `;
+  const nameDiv = document.createElement('div');
+  nameDiv.className = 'product-name';
+  nameDiv.textContent = product.name;
   
-  const removeBtn = item.querySelector('.remove-btn');
-  removeBtn.addEventListener('click', () => removeProduct(product.id));
+  const actionsDiv = document.createElement('div');
+  actionsDiv.className = 'product-actions';
   
-  const checkBtn = item.querySelector('.check-price-btn');
+  const checkBtn = document.createElement('button');
+  checkBtn.className = 'btn btn-small check-price-btn';
+  checkBtn.setAttribute('data-id', product.id);
+  checkBtn.textContent = t('check', currentLang);
   checkBtn.addEventListener('click', () => checkPrice(product.id));
   
-  const chartBtn = item.querySelector('.show-chart-btn');
-  if (chartBtn) {
-    chartBtn.addEventListener('click', () => showPriceChart(product));
+  const removeBtn = document.createElement('button');
+  removeBtn.className = 'btn btn-danger remove-btn';
+  removeBtn.setAttribute('data-id', product.id);
+  removeBtn.textContent = t('remove', currentLang);
+  removeBtn.addEventListener('click', () => removeProduct(product.id));
+  
+  actionsDiv.appendChild(checkBtn);
+  actionsDiv.appendChild(removeBtn);
+  header.appendChild(nameDiv);
+  header.appendChild(actionsDiv);
+  
+  // Create content
+  const content = document.createElement('div');
+  content.className = 'product-content';
+  
+  if (product.image) {
+    const img = document.createElement('img');
+    img.src = product.image;
+    img.alt = product.name;
+    img.className = 'product-image';
+    img.onerror = function() { this.style.display = 'none'; };
+    content.appendChild(img);
   }
+  
+  const details = document.createElement('div');
+  details.className = 'product-details';
+  
+  const urlLink = document.createElement('a');
+  urlLink.href = product.url;
+  urlLink.target = '_blank';
+  urlLink.className = 'product-url';
+  urlLink.textContent = product.url;
+  details.appendChild(urlLink);
+  
+  // Original price
+  const originalPriceInfo = document.createElement('div');
+  originalPriceInfo.className = 'price-info';
+  const originalPriceDiv = document.createElement('div');
+  const originalPriceLabel = document.createElement('span');
+  originalPriceLabel.className = 'price-label';
+  originalPriceLabel.textContent = t('originalPrice', currentLang);
+  const originalPriceValue = document.createElement('span');
+  originalPriceValue.className = 'price-value price-original';
+  originalPriceValue.textContent = `${originalPrice.toFixed(2)} ₽`;
+  originalPriceDiv.appendChild(originalPriceLabel);
+  originalPriceDiv.appendChild(originalPriceValue);
+  originalPriceInfo.appendChild(originalPriceDiv);
+  details.appendChild(originalPriceInfo);
+  
+  // Current price
+  const currentPriceInfo = document.createElement('div');
+  currentPriceInfo.className = 'price-info';
+  const currentPriceDiv = document.createElement('div');
+  const currentPriceLabel = document.createElement('span');
+  currentPriceLabel.className = 'price-label';
+  currentPriceLabel.textContent = t('currentPrice', currentLang);
+  const currentPriceValue = document.createElement('span');
+  currentPriceValue.className = 'price-value price-current';
+  currentPriceValue.textContent = `${currentPrice.toFixed(2)} ₽`;
+  currentPriceDiv.appendChild(currentPriceLabel);
+  currentPriceDiv.appendChild(currentPriceValue);
+  if (priceDrop > 0) {
+    const priceDropBadge = document.createElement('span');
+    priceDropBadge.className = 'price-drop-badge';
+    priceDropBadge.textContent = `-${percentDrop}%`;
+    currentPriceDiv.appendChild(priceDropBadge);
+  }
+  currentPriceInfo.appendChild(currentPriceDiv);
+  details.appendChild(currentPriceInfo);
+  
+  // Minimum price
+  if (minPrice < originalPrice) {
+    const minPriceInfo = document.createElement('div');
+    minPriceInfo.className = 'price-info';
+    const minPriceLabel = document.createElement('span');
+    minPriceLabel.className = 'price-label';
+    minPriceLabel.textContent = t('minPrice', currentLang);
+    const minPriceValue = document.createElement('span');
+    minPriceValue.className = 'price-value price-min';
+    minPriceValue.textContent = `${minPrice.toFixed(2)} ₽`;
+    minPriceInfo.appendChild(minPriceLabel);
+    minPriceInfo.appendChild(minPriceValue);
+    details.appendChild(minPriceInfo);
+  }
+  
+  // Savings
+  if (priceDrop > 0) {
+    const savingsInfo = document.createElement('div');
+    savingsInfo.className = 'price-info';
+    const savingsSpan = document.createElement('span');
+    savingsSpan.className = 'price-drop';
+    savingsSpan.textContent = `${t('savings', currentLang)} ${priceDrop.toFixed(2)} ₽`;
+    savingsInfo.appendChild(savingsSpan);
+    details.appendChild(savingsInfo);
+  }
+  
+  // Last checked
+  const lastCheckedDiv = document.createElement('div');
+  lastCheckedDiv.className = 'last-checked';
+  lastCheckedDiv.textContent = `${t('lastChecked', currentLang)} ${lastChecked}`;
+  details.appendChild(lastCheckedDiv);
+  
+  // Chart button
+  if (product.priceHistory && product.priceHistory.length > 1) {
+    const chartBtn = document.createElement('button');
+    chartBtn.className = 'btn btn-chart show-chart-btn';
+    chartBtn.setAttribute('data-id', product.id);
+    chartBtn.textContent = t('chart', currentLang);
+    chartBtn.addEventListener('click', () => showPriceChart(product));
+    details.appendChild(chartBtn);
+  }
+  
+  content.appendChild(details);
+  item.appendChild(header);
+  item.appendChild(content);
   
   return item;
 }
@@ -118,11 +227,11 @@ function showPriceChart(product) {
   const info = document.getElementById('chartInfo');
   
   if (!product.priceHistory || product.priceHistory.length < 2) {
-    alert('Недостаточно данных для построения графика');
+    alert(t('insufficientData', currentLang));
     return;
   }
   
-  title.textContent = `График цены: ${escapeHtml(product.name)}`;
+  title.textContent = `${t('priceChart', currentLang)} ${product.name}`;
   
   drawPriceChart(canvas, product.priceHistory, parseFloat(product.originalPrice), parseFloat(product.minPrice || product.originalPrice));
   
@@ -131,39 +240,93 @@ function showPriceChart(product) {
   const minPrice = parseFloat(product.minPrice || product.originalPrice);
   const maxPrice = Math.max(...product.priceHistory.map(h => h.price));
   
-  let infoHtml = `
-    <div class="chart-stats">
-      <div class="stat-item">
-        <span class="stat-label">Изначальная цена:</span>
-        <span class="stat-value">${originalPrice.toFixed(2)} ₽</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-label">Текущая цена:</span>
-        <span class="stat-value">${currentPrice.toFixed(2)} ₽</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-label">Минимальная цена:</span>
-        <span class="stat-value price-min">${minPrice.toFixed(2)} ₽</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-label">Максимальная цена:</span>
-        <span class="stat-value">${maxPrice.toFixed(2)} ₽</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-label">Изменение:</span>
-        <span class="stat-value ${currentPrice < originalPrice ? 'price-drop' : ''}">
-          ${currentPrice < originalPrice ? '-' : '+'}${Math.abs(currentPrice - originalPrice).toFixed(2)} ₽ 
-          (${((Math.abs(currentPrice - originalPrice) / originalPrice) * 100).toFixed(1)}%)
-        </span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-label">Всего проверок:</span>
-        <span class="stat-value">${product.priceHistory.length}</span>
-      </div>
-    </div>
-  `;
+  // Clear existing content
+  info.textContent = '';
   
-  info.innerHTML = infoHtml;
+  const statsDiv = document.createElement('div');
+  statsDiv.className = 'chart-stats';
+  
+  // Original price
+  const originalStat = document.createElement('div');
+  originalStat.className = 'stat-item';
+  const originalLabel = document.createElement('span');
+  originalLabel.className = 'stat-label';
+  originalLabel.textContent = t('originalPrice', currentLang);
+  const originalValue = document.createElement('span');
+  originalValue.className = 'stat-value';
+  originalValue.textContent = `${originalPrice.toFixed(2)} ₽`;
+  originalStat.appendChild(originalLabel);
+  originalStat.appendChild(originalValue);
+  statsDiv.appendChild(originalStat);
+  
+  // Current price
+  const currentStat = document.createElement('div');
+  currentStat.className = 'stat-item';
+  const currentLabel = document.createElement('span');
+  currentLabel.className = 'stat-label';
+  currentLabel.textContent = t('currentPrice', currentLang);
+  const currentValue = document.createElement('span');
+  currentValue.className = 'stat-value';
+  currentValue.textContent = `${currentPrice.toFixed(2)} ₽`;
+  currentStat.appendChild(currentLabel);
+  currentStat.appendChild(currentValue);
+  statsDiv.appendChild(currentStat);
+  
+  // Minimum price
+  const minStat = document.createElement('div');
+  minStat.className = 'stat-item';
+  const minLabel = document.createElement('span');
+  minLabel.className = 'stat-label';
+  minLabel.textContent = t('minPrice', currentLang);
+  const minValue = document.createElement('span');
+  minValue.className = 'stat-value price-min';
+  minValue.textContent = `${minPrice.toFixed(2)} ₽`;
+  minStat.appendChild(minLabel);
+  minStat.appendChild(minValue);
+  statsDiv.appendChild(minStat);
+  
+  // Maximum price
+  const maxStat = document.createElement('div');
+  maxStat.className = 'stat-item';
+  const maxLabel = document.createElement('span');
+  maxLabel.className = 'stat-label';
+  maxLabel.textContent = t('maxPrice', currentLang);
+  const maxValue = document.createElement('span');
+  maxValue.className = 'stat-value';
+  maxValue.textContent = `${maxPrice.toFixed(2)} ₽`;
+  maxStat.appendChild(maxLabel);
+  maxStat.appendChild(maxValue);
+  statsDiv.appendChild(maxStat);
+  
+  // Change
+  const changeStat = document.createElement('div');
+  changeStat.className = 'stat-item';
+  const changeLabel = document.createElement('span');
+  changeLabel.className = 'stat-label';
+  changeLabel.textContent = t('change', currentLang);
+  const changeValue = document.createElement('span');
+  const priceChange = Math.abs(currentPrice - originalPrice);
+  const percentChange = ((priceChange / originalPrice) * 100).toFixed(1);
+  changeValue.className = currentPrice < originalPrice ? 'stat-value price-drop' : 'stat-value';
+  changeValue.textContent = `${currentPrice < originalPrice ? '-' : '+'}${priceChange.toFixed(2)} ₽ (${percentChange}%)`;
+  changeStat.appendChild(changeLabel);
+  changeStat.appendChild(changeValue);
+  statsDiv.appendChild(changeStat);
+  
+  // Total checks
+  const checksStat = document.createElement('div');
+  checksStat.className = 'stat-item';
+  const checksLabel = document.createElement('span');
+  checksLabel.className = 'stat-label';
+  checksLabel.textContent = t('totalChecks', currentLang);
+  const checksValue = document.createElement('span');
+  checksValue.className = 'stat-value';
+  checksValue.textContent = String(product.priceHistory.length);
+  checksStat.appendChild(checksLabel);
+  checksStat.appendChild(checksValue);
+  statsDiv.appendChild(checksStat);
+  
+  info.appendChild(statsDiv);
   
   modal.style.display = 'block';
 }
@@ -244,7 +407,7 @@ function drawPriceChart(canvas, priceHistory, originalPrice, minPrice) {
   ctx.fillStyle = '#999';
   ctx.font = '11px Arial';
   ctx.textAlign = 'left';
-  ctx.fillText('Изначальная', width - padding - 80, originalY - 5);
+  ctx.fillText(t('original', currentLang), width - padding - 80, originalY - 5);
   
   ctx.strokeStyle = '#007bff';
   ctx.lineWidth = 3;
@@ -289,7 +452,7 @@ function drawPriceChart(canvas, priceHistory, originalPrice, minPrice) {
       ctx.fillStyle = '#28a745';
       ctx.font = 'bold 11px Arial';
       ctx.textAlign = 'center';
-      ctx.fillText(`Мин: ${minPrice.toFixed(0)} ₽`, minX, minY - 10);
+      ctx.fillText(`${t('min', currentLang)} ${minPrice.toFixed(0)} ₽`, minX, minY - 10);
     }
   }
 }
@@ -301,7 +464,7 @@ function escapeHtml(text) {
 }
 
 async function removeProduct(productId) {
-  if (confirm('Удалить этот товар из отслеживания?')) {
+  if (confirm(t('removeConfirm', currentLang))) {
     const result = await browser.storage.local.get(['products']);
     const products = result.products || {};
     delete products[productId];
@@ -313,7 +476,7 @@ async function removeProduct(productId) {
 async function checkPrice(productId) {
   const checkBtn = document.querySelector(`.check-price-btn[data-id="${productId}"]`);
   const originalText = checkBtn.textContent;
-  checkBtn.textContent = 'Проверяю...';
+  checkBtn.textContent = t('checking', currentLang);
   checkBtn.disabled = true;
   
   try {
@@ -328,7 +491,7 @@ async function checkPrice(productId) {
       checkBtn.disabled = false;
     }, 3000);
   } catch (error) {
-    console.error('Ошибка при проверке цены:', error);
+    console.error(t('checkPriceError', currentLang), error);
     checkBtn.textContent = originalText;
     checkBtn.disabled = false;
   }
@@ -344,17 +507,17 @@ async function addCurrentPage() {
     });
     
     if (!pageInfo) {
-      alert('Не удалось получить информацию о странице. Попробуйте обновить страницу.');
+      alert(t('pageInfoError', currentLang));
       return;
     }
     
-    const name = pageInfo.title || 'Товар';
+    const name = pageInfo.title || t('productNameDefault', currentLang);
     const url = pageInfo.url;
     const price = pageInfo.price;
     const image = pageInfo.image || '';
     
     if (!price || isNaN(price)) {
-      alert('Не удалось автоматически определить цену. Пожалуйста, добавьте товар вручную.');
+      alert(t('priceDetectionError', currentLang));
       showAddForm(name, url, '');
       return;
     }
@@ -370,8 +533,8 @@ async function addCurrentPage() {
     await loadProducts();
     hideAddForm();
   } catch (error) {
-    console.error('Ошибка при добавлении товара:', error);
-    alert('Ошибка при добавлении товара. Убедитесь, что страница полностью загружена.');
+    console.error(t('addProductError', currentLang), error);
+    alert(t('addProductError', currentLang));
   }
 }
 
@@ -395,12 +558,12 @@ async function saveProduct() {
   const price = document.getElementById('productPrice').value.trim();
   
   if (!name || !url || !price) {
-    alert('Заполните все поля');
+    alert(t('fillAllFields', currentLang));
     return;
   }
   
   if (isNaN(parseFloat(price))) {
-    alert('Введите корректную цену');
+    alert(t('invalidPrice', currentLang));
     return;
   }
   
@@ -416,8 +579,8 @@ async function saveProduct() {
     await loadProducts();
     hideAddForm();
   } catch (error) {
-    console.error('Ошибка при сохранении товара:', error);
-    alert('Ошибка при сохранении товара');
+    console.error(t('saveProductError', currentLang), error);
+    alert(t('saveProductError', currentLang));
   }
 }
 
@@ -426,12 +589,17 @@ function closeChartModal() {
   modal.style.display = 'none';
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  loadProducts();
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadLanguage();
+  await loadProducts();
   
   document.getElementById('addCurrentPage').addEventListener('click', addCurrentPage);
   document.getElementById('saveProduct').addEventListener('click', saveProduct);
   document.getElementById('cancelAdd').addEventListener('click', hideAddForm);
+  
+  // Language switcher
+  document.getElementById('langEn').addEventListener('click', () => changeLanguage('en'));
+  document.getElementById('langRu').addEventListener('click', () => changeLanguage('ru'));
   
   const modal = document.getElementById('chartModal');
   const closeBtn = document.querySelector('.modal-close');

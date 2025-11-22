@@ -18,11 +18,41 @@ body {
 header {
   margin-bottom: 20px;
   text-align: center;
+  position: relative;
 }
 
 header h1 {
   font-size: 20px;
   color: #333;
+}
+
+.language-switcher {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  gap: 5px;
+}
+
+.lang-btn {
+  padding: 4px 8px;
+  border: 1px solid #ddd;
+  background: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.lang-btn:hover {
+  background: #f0f0f0;
+}
+
+.lang-btn.active {
+  background: #007bff;
+  color: white;
+  border-color: #007bff;
 }
 
 .add-product-section {

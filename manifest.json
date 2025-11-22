@@ -1,8 +1,8 @@
 {
   "manifest_version": 2,
-  "name": "Отслеживание цен товаров",
+  "name": "Product Price Tracker",
   "version": "1.0.0",
-  "description": "Отслеживает цены товаров и уведомляет, когда цена становится ниже",
+  "description": "Tracks product prices and notifies you when prices drop",
   "permissions": [
     "storage",
     "notifications",
@@ -37,5 +37,37 @@
   },
   "web_accessible_resources": [
     "icons/*.png"
-  ]
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "price-tracker@wb-tracker",
+      "data_collection_permissions": {
+        "description": "This extension collects product information (URLs, names, prices, images) from pages you visit to track price changes. All data is stored locally in your browser and is never transmitted to external servers or third parties. The data is used solely to monitor price changes and send you notifications when prices drop.",
+        "data_collected": [
+          {
+            "type": "Product URLs",
+            "purpose": "Track price changes on specific product pages",
+            "retention": "Stored locally until you remove the product from tracking"
+          },
+          {
+            "type": "Product names",
+            "purpose": "Display product information in the extension interface",
+            "retention": "Stored locally until you remove the product from tracking"
+          },
+          {
+            "type": "Product prices",
+            "purpose": "Monitor price changes and calculate savings",
+            "retention": "Stored locally until you remove the product from tracking"
+          },
+          {
+            "type": "Product images",
+            "purpose": "Display product images in the extension interface",
+            "retention": "Stored locally until you remove the product from tracking"
+          }
+        ],
+        "data_sharing": "No data is shared with third parties or external servers. All data remains on your device.",
+        "data_storage": "All data is stored locally using browser.storage.local API"
+      }
+    }
+  }
 }

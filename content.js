@@ -124,11 +124,11 @@ function findProductNameOnPage() {
     }
   }
   
-  return document.title || 'Товар';
+  return document.title || 'Product';
 }
 
 function cleanProductName(title) {
-  if (!title) return 'Товар';
+  if (!title) return 'Product';
   
   let cleanName = title;
   cleanName = cleanName.replace(/\s*купить\s+за\s+[\d\s.,]+?\s*[₽рубRUB]?/gi, '');
@@ -174,16 +174,24 @@ async function checkIfTracked() {
   
   for (const productId in products) {
     if (products[productId].url === currentUrl) {
-      showTrackingIndicator();
+      await showTrackingIndicator();
       break;
     }
   }
 }
 
-function showTrackingIndicator() {
+async function showTrackingIndicator() {
+  const result = await browser.storage.local.get(['language']);
+  const lang = result.language || 'en';
+  const translations = {
+    en: '✓ Product is being tracked',
+    ru: '✓ Товар отслеживается'
+  };
+  const text = translations[lang] || translations.en;
+  
   const indicator = document.createElement('div');
   indicator.id = 'price-tracker-indicator';
-  indicator.innerHTML = '✓ Товар отслеживается';
+  indicator.textContent = text;
   indicator.style.cssText = `
     position: fixed;
     top: 20px;

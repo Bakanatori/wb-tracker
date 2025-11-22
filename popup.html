@@ -1,46 +1,50 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Отслеживание цен</title>
+  <title>Price Tracker</title>
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
   <div class="container">
     <header>
-      <h1>💰 Отслеживание цен</h1>
+      <h1 id="headerTitle">💰 Price Tracker</h1>
+      <div class="language-switcher">
+        <button id="langEn" class="lang-btn active" data-lang="en">EN</button>
+        <button id="langRu" class="lang-btn" data-lang="ru">RU</button>
+      </div>
     </header>
     
     <div class="add-product-section">
-      <h2>Добавить товар</h2>
+      <h2 id="addProductTitle">Add Product</h2>
       <button id="addCurrentPage" class="btn btn-primary">
-        Добавить текущую страницу
+        Add Current Page
       </button>
       <div id="addProductForm" class="form" style="display: none;">
-        <input type="text" id="productName" placeholder="Название товара">
-        <input type="text" id="productUrl" placeholder="URL товара">
-        <input type="number" id="productPrice" placeholder="Цена (₽)" step="0.01">
+        <input type="text" id="productName" placeholder="Product Name">
+        <input type="text" id="productUrl" placeholder="Product URL">
+        <input type="number" id="productPrice" placeholder="Price (₽)" step="0.01">
         <div class="form-actions">
-          <button id="saveProduct" class="btn btn-success">Сохранить</button>
-          <button id="cancelAdd" class="btn btn-secondary">Отмена</button>
+          <button id="saveProduct" class="btn btn-success">Save</button>
+          <button id="cancelAdd" class="btn btn-secondary">Cancel</button>
         </div>
       </div>
     </div>
     
     <div class="products-section">
-      <h2>Отслеживаемые товары</h2>
+      <h2 id="trackedProductsTitle">Tracked Products</h2>
       <div id="productsList" class="products-list">
-        <p class="empty-state">Нет отслеживаемых товаров</p>
+        <p class="empty-state">No tracked products</p>
       </div>
     </div>
   </div>
   
-  <!-- Модальное окно для графика -->
+  <!-- Chart Modal -->
   <div id="chartModal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h2 id="chartModalTitle">График цены</h2>
+        <h2 id="chartModalTitle">Price Chart</h2>
         <span class="modal-close">&times;</span>
       </div>
       <div class="modal-body">
@@ -50,6 +54,7 @@
     </div>
   </div>
   
+  <script src="locales.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>
