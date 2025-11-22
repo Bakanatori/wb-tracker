@@ -42,6 +42,7 @@
     "gecko": {
       "id": "price-tracker@wb-tracker",
       "data_collection_permissions": {
+        "required": ["none"],
         "description": "This extension collects product information (URLs, names, prices, images) from pages you visit to track price changes. All data is stored locally in your browser and is never transmitted to external servers or third parties. The data is used solely to monitor price changes and send you notifications when prices drop.",
         "data_collected": [
           {
