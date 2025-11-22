@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Отслеживание цен</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>💰 Отслеживание цен</h1>
+    </header>
+    
+    <div class="add-product-section">
+      <h2>Добавить товар</h2>
+      <button id="addCurrentPage" class="btn btn-primary">
+        Добавить текущую страницу
+      </button>
+      <div id="addProductForm" class="form" style="display: none;">
+        <input type="text" id="productName" placeholder="Название товара">
+        <input type="text" id="productUrl" placeholder="URL товара">
+        <input type="number" id="productPrice" placeholder="Цена (₽)" step="0.01">
+        <div class="form-actions">
+          <button id="saveProduct" class="btn btn-success">Сохранить</button>
+          <button id="cancelAdd" class="btn btn-secondary">Отмена</button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="products-section">
+      <h2>Отслеживаемые товары</h2>
+      <div id="productsList" class="products-list">
+        <p class="empty-state">Нет отслеживаемых товаров</p>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Модальное окно для графика -->
+  <div id="chartModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="chartModalTitle">График цены</h2>
+        <span class="modal-close">&times;</span>
+      </div>
+      <div class="modal-body">
+        <canvas id="chartCanvas" width="600" height="300"></canvas>
+        <div id="chartInfo" class="chart-info"></div>
+      </div>
+    </div>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
+
